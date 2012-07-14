@@ -206,6 +206,7 @@ def subdivx_get_subs(query_str):
 
 
 def get_subs(query_str, filters):
+	sub_exts = ('.srt', '.sub')
 	zip_exts = ('application/zip',)
 	rar_exts = ('application/rar', 'application/x-rar-compressed')
 
@@ -225,7 +226,7 @@ def get_subs(query_str, filters):
 				z = zipfile.ZipFile(fname, 'r')
 				z.printdir()
 				for fn in z.namelist():
-					if fn.endswith('.srt') or fn.endswith('.sub'):
+					if fn.endswith(sub_exts):
 						if '..' in fn or fn.startswith('/'):
 							print('Dangerous file name:', fn)
 							continue
