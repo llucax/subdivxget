@@ -199,10 +199,10 @@ def get_subs(query_str, filters):
 
 	for sub in subs:
 		print '''\
-	- %(titulo)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
-	  %(desc)s
-		DOWNLOADING ...
-	''' % sub
+- %(titulo)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
+  %(desc)s
+	DOWNLOADING ...
+''' % sub
 		fname, headers = urllib.urlretrieve(sub['url'])
 		if 'Content-Type' in headers:
 			if headers['Content-Type'] in zip_exts:
