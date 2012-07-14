@@ -43,6 +43,7 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 		self.parsing = False
 		self.subs = []
 		self.attr = None
+		self.attr_depth = 0
 		self.cur = None
 		self.in_script_style = False
 
@@ -62,9 +63,13 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 				self.parsing = True
 			elif attrs.get('id') == 'buscador_detalle_sub':
 				self.attr = 'desc'
+				self.attr_depth = self.depth + 1
+				self.cur[self.attr] = ''
 		elif tag == 'a':
 			if attrs.get('class') == 'titulo_menu_izq':
 				self.attr = 'titulo'
+				self.attr_depth = self.depth + 1
+				self.cur[self.attr] = ''
 			elif attrs.get('href', '').startswith(self.down_uri):
 				self.cur['url'] = attrs['href']
 		# br are usually not closed, so ignore them in depth calculation
@@ -76,6 +81,9 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			if tag == 'script' or tag == 'style':
 				self.in_script_style = False
 				return
+			if self.depth == self.attr_depth:
+				self.attr = None
+				self.attr_depth = 0
 			# see comment in handle_starttag()
 			if tag != 'br':
 				self.depth -= 1
@@ -91,15 +99,23 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 		if self.in_script_style:
 			return
 		if self.attr is not None and data:
-			self.cur[self.attr] = data
-			self.attr = None
-		elif data in ('Downloads:', 'Cds:', 'Comentarios:',
-				'Formato:'):
+			self.cur[self.attr] += ' ' + data
+			if self.attr_depth == 0:
+				self.cur[self.attr] = self.cur[self.attr].strip()
+				self.attr = None
+				self.attr_depth = 0
+		elif data in ('Downloads:', 'Cds:', 'Comentarios:', 'Formato:'):
 			self.attr = data[:-1].lower()
+			self.attr_depth = 0
+			self.cur[self.attr] = ''
 		elif data == 'Subido por:':
 			self.attr = 'autor'
+			self.attr_depth = 0
+			self.cur[self.attr] = ''
 		elif data == 'el':
 			self.attr = 'fecha'
+			self.attr_depth = 0
+			self.cur[self.attr] = ''
 
 
 def subdivx_get_subs(query_str):
