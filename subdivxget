@@ -29,8 +29,6 @@ class SubDivXQuery:
 	def down_uri(self):
 		return 'http://' + self.host + self.down_page
 
-class Subtitle:
-	pass
 
 class SubDivXHTMLParser(HTMLParser.HTMLParser):
 
@@ -48,7 +46,6 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 	def handle_starttag(self, tag, attrs):
 		attrs = dict(attrs)
 		if tag == 'div' and attrs.get('id') == 'menu_detalle_buscador':
-			#self.cur = Subtitle()
 			self.cur = dict()
 			self.subs.append(self.cur)
 			self.parsing = True
@@ -79,8 +76,6 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			if self.attr is not None and data:
 				self.cur[self.attr] = data
 				self.attr = None
-				#self.cur[self.attr] = self.cur.get(self.attr, '') + data.strip()
-				#setattr(self.cur, self.attr, data.strip())
 			elif data in ('Downloads:', 'Cds:', 'Comentarios:',
 					'Formato:'):
 				self.attr = data[:-1].lower()
