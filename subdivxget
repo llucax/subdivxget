@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+
+import sys
+import urllib
+import zipfile
+import subprocess
+import HTMLParser
+
+class SubDivXQuery:
+	def __init__(self, to_search):
+		self.host = "www.subdivx.com"
+		self.page = "/index.php"
+		self.down_page = "/bajar.php"
+		self.query = dict(
+			buscar = to_search,
+			accion = 5,
+			masdesc = '',
+			subtitulos = 1,
+			realiza_b = 1,
+		)
+	@property
+	def url(self):
+		return 'http://%s%s?%s' % (self.host, self.page,
+				urllib.urlencode(self.query))
+	@property
+	def page_uri(self):
+		return self.page + '?' + urllib.urlencode(self.query)
+	@property
+	def down_uri(self):
+		return 'http://' + self.host + self.down_page
+
+class Subtitle:
+	pass
+
+class SubDivXHTMLParser(HTMLParser.HTMLParser):
+
+	IDLE = 1
+	HEADER = 2
+
+	def __init__(self, down_uri):
+		HTMLParser.HTMLParser.__init__(self)
+		self.down_uri = down_uri
+		self.depth = 0
+		self.parsing = False
+		self.subs = []
+		self.attr = None
+
+	def handle_starttag(self, tag, attrs):
+		attrs = dict(attrs)
+		if tag == 'div' and attrs.get('id') == 'menu_detalle_buscador':
+			#self.cur = Subtitle()
+			self.cur = dict()
+			self.subs.append(self.cur)
+			self.parsing = True
+		if not self.parsing:
+			return
+		if tag == 'div':
+			if attrs.get('id') == 'buscador_detalle':
+				self.parsing = True
+			elif attrs.get('id') == 'buscador_detalle_sub':
+				self.attr = 'desc'
+		elif tag == 'a':
+			if attrs.get('class') == 'titulo_menu_izq':
+				self.attr = 'title'
+			elif attrs.get('href', '').startswith(self.down_uri):
+				self.cur['url'] = attrs['href']
+		if self.parsing:
+			self.depth += 1
+
+	def handle_endtag(self, tag):
+		if self.parsing:
+			self.depth -= 1
+		if self.depth == 0:
+			self.parsing = False
+
+	def handle_data(self, data):
+		if self.parsing:
+			data = data.strip()
+			if self.attr is not None and data:
+				self.cur[self.attr] = data
+				self.attr = None
+				#self.cur[self.attr] = self.cur.get(self.attr, '') + data.strip()
+				#setattr(self.cur, self.attr, data.strip())
+			elif data in ('Downloads:', 'Cds:', 'Comentarios:',
+					'Formato:'):
+				self.attr = data[:-1].lower()
+			elif data == 'Subido por:':
+				self.attr = 'autor'
+			elif data == 'el':
+				self.attr = 'fecha'
+
+
+def get_subs(query_str):
+	query = SubDivXQuery(query_str)
+
+	url = urllib.urlopen(query.url)
+
+	parser = SubDivXHTMLParser(query.down_uri)
+
+	for line in url:
+		parser.feed(line)
+
+	url.close()
+
+	zip_exts = ('application/zip',)
+	rar_exts = ('application/rar', 'application/x-rar-compressed')
+
+	for sub in sorted(parser.subs, key=lambda s: int(s['downloads']), reverse=True):
+		print '''\
+	- %(title)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
+	  %(desc)s
+		DOWNLOADING ...
+	''' % sub
+		fname, headers = urllib.urlretrieve(sub['url'])
+		if 'Content-Type' in headers:
+			if headers['Content-Type'] in zip_exts:
+				z = zipfile.ZipFile(fname, 'r')
+				z.printdir()
+				for fn in z.namelist():
+					if fn.endswith('.srt') or fn.endswith('.sub'):
+						if '..' in fn or fn.startswith('/'):
+							print 'Dangerous file name:', fn
+							continue
+						print 'Extracting', fn, '...'
+						z.extract(fn)
+			elif headers['Content-Type'] in rar_exts:
+				if subprocess.call(['rar', 'x', fname]) != 0:
+					print 'Error unraring file %s' % fname
+			else:
+				print 'Unrecognized file type:', headers['Content-Type']
+		else:
+			print 'No Content-Type!'
+
+
+for q in sys.argv[1:]:
+	get_subs(q)
+
