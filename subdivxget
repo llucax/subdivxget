@@ -72,18 +72,19 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			self.parsing = False
 
 	def handle_data(self, data):
-		if self.parsing:
-			data = data.strip()
-			if self.attr is not None and data:
-				self.cur[self.attr] = data
-				self.attr = None
-			elif data in ('Downloads:', 'Cds:', 'Comentarios:',
-					'Formato:'):
-				self.attr = data[:-1].lower()
-			elif data == 'Subido por:':
-				self.attr = 'autor'
-			elif data == 'el':
-				self.attr = 'fecha'
+		if not self.parsing:
+			return
+		data = data.strip()
+		if self.attr is not None and data:
+			self.cur[self.attr] = data
+			self.attr = None
+		elif data in ('Downloads:', 'Cds:', 'Comentarios:',
+				'Formato:'):
+			self.attr = data[:-1].lower()
+		elif data == 'Subido por:':
+			self.attr = 'autor'
+		elif data == 'el':
+			self.attr = 'fecha'
 
 
 def subdivx_get_subs(query_str):
