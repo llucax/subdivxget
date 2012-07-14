@@ -202,7 +202,7 @@ def subdivx_get_subs(query_str):
 		subs.extend(parser.subs)
 		page_number += 1
 
-	return sorted(subs, key=lambda s: int(s['downloads']), reverse=True)
+	return subs
 
 
 def get_subs(query_str, filters):
@@ -212,6 +212,7 @@ def get_subs(query_str, filters):
 
 	subs = subdivx_get_subs(query_str)
 	subs = filter_subtitles(subs, filters)
+	subs.sort(key=lambda s: int(s['downloads']), reverse=True)
 
 	for sub in subs:
 		print('''\
