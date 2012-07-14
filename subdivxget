@@ -16,6 +16,19 @@ else:
 import zipfile
 import subprocess
 
+
+def output(fo, fmt, *args, **kargs):
+	if not args:
+		args = kargs
+	fo.write((fmt % args) + '\n')
+
+def echo(fmt, *args, **kargs):
+	output(sys.stdout, fmt, *args, **kargs)
+
+def error(fmt, *args, **kargs):
+	output(sys.stderr, fmt, *args, **kargs)
+
+
 class SubDivXQuery:
 	def __init__(self, to_search, page_number):
 		self.host = "www.subdivx.com"
@@ -215,12 +228,11 @@ def get_subs(query_str, filters):
 	subs.sort(key=lambda s: int(s['downloads']), reverse=True)
 
 	for sub in subs:
-		print('''\
+		echo('''\
 - %(titulo)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
   %(desc)s
 	DOWNLOADING ...
-''' % sub)
-		continue
+''', **sub)
 		fname, headers = urlretrieve(sub['url'])
 		if 'Content-Type' in headers:
 			if headers['Content-Type'] in zip_exts:
@@ -229,17 +241,18 @@ def get_subs(query_str, filters):
 				for fn in z.namelist():
 					if fn.endswith(sub_exts):
 						if '..' in fn or fn.startswith('/'):
-							print('Dangerous file name:', fn)
+							error('Dangerous file name: %s', fn)
 							continue
-						print('Extracting', fn, '...')
+						echo('Extracting %s...', fn)
 						z.extract(fn)
 			elif headers['Content-Type'] in rar_exts:
 				if subprocess.call(['rar', 'x', fname]) != 0:
-					print('Error unraring file %s' % fname)
+					error('Error unraring file %s', fname)
 			else:
-				print('Unrecognized file type:', headers['Content-Type'])
+				error('Unrecognized file type:',
+						headers['Content-Type'])
 		else:
-			print('No Content-Type!')
+			error('No Content-Type!')
 
 
 get_subs(sys.argv[1], sys.argv[2:])
