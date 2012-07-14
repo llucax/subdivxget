@@ -64,7 +64,7 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 				self.attr = 'desc'
 		elif tag == 'a':
 			if attrs.get('class') == 'titulo_menu_izq':
-				self.attr = 'title'
+				self.attr = 'titulo'
 			elif attrs.get('href', '').startswith(self.down_uri):
 				self.cur['url'] = attrs['href']
 		if self.parsing:
@@ -127,7 +127,7 @@ def get_subs(query_str):
 
 	for sub in subdivx_get_subs(query_str):
 		print '''\
-	- %(title)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
+	- %(titulo)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
 	  %(desc)s
 		DOWNLOADING ...
 	''' % sub
