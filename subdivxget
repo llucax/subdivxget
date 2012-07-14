@@ -23,6 +23,9 @@ def output(fo, fmt, *args, **kargs):
 	fo.write((fmt % args) + '\n')
 
 def echo(fmt, *args, **kargs):
+	global opts
+	if opts.quiet:
+		return
 	output(sys.stdout, fmt, *args, **kargs)
 
 def error(fmt, *args, **kargs):
@@ -278,10 +281,17 @@ looked in all the fields.
 	parser.add_option("-l", "--list-only",
 			default=False, action='store_true',
 			help="Don't download the subtitles, just list them")
+	parser.add_option("-q", "--quiet",
+			default=False, action='store_true',
+			help="Don't print progress messages")
 
 	(opts, args) = parser.parse_args()
 	if not args:
               parser.error("Missing query string")
+
+	if opts.quiet and opts.list_only:
+		parser.error("Using --quiet and --list-only together doesn't "
+				"make any sense")
 
 	return (args[0], args[1:], opts)
 
