@@ -118,6 +118,56 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			self.cur[self.attr] = ''
 
 
+def filter_subtitles(subs, filters):
+	def is_good(sub, filter):
+		def is_any_good(sub, filter):
+			for value in sub.values():
+				if value.lower().find(filter) >= 0:
+					return True
+
+		field = None
+		if len(filter) > 2 and filter[1] == ':':
+			field = filter[0]
+			filter = filter[2:]
+		filter = filter.lower()
+
+		if field is None:
+			return is_any_good(sub, filter)
+		elif field == 't':
+			key = 'titulo'
+		elif field == 'd':
+			key = 'desc'
+		elif field == 'a':
+			key = 'autor'
+		elif field == 'f':
+			key = 'formato'
+		elif field == 'c':
+			key = 'comentarios'
+		elif field == 'C':
+			key = 'cds'
+		elif field == 'F':
+			key = 'fecha'
+		elif field == 'D':
+			key = 'downloads'
+		else:
+			# Not a recognizer field identifier, use the raw filter
+			return is_any_good(sub, field + ':' + filter)
+
+		return sub[key].lower().find(filter) >= 0
+
+	if not filters:
+		return subs
+
+	result = []
+	for sub in subs:
+		for filter in filters:
+			if not is_good(sub, filter):
+				break
+		else:
+			result.append(sub)
+	return result
+
+
 def subdivx_get_subs(query_str):
 	page_number = 1
 	subs = []
@@ -140,11 +190,14 @@ def subdivx_get_subs(query_str):
 	return sorted(subs, key=lambda s: int(s['downloads']), reverse=True)
 
 
-def get_subs(query_str):
+def get_subs(query_str, filters):
 	zip_exts = ('application/zip',)
 	rar_exts = ('application/rar', 'application/x-rar-compressed')
 
-	for sub in subdivx_get_subs(query_str):
+	subs = subdivx_get_subs(query_str)
+	subs = filter_subtitles(subs, filters)
+
+	for sub in subs:
 		print '''\
 	- %(titulo)s (%(autor)s - %(fecha)s - %(downloads)s - %(comentarios)s)
 	  %(desc)s
@@ -171,6 +224,5 @@ def get_subs(query_str):
 			print 'No Content-Type!'
 
 
-for q in sys.argv[1:]:
-	get_subs(q)
+get_subs(sys.argv[1], sys.argv[2:])
 
