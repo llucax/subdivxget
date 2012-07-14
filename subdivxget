@@ -218,8 +218,21 @@ def subdivx_get_subs(query_str):
 	return subs
 
 
-def get_subs(query_str, filters):
+def unzip_subs(fname):
 	sub_exts = ('.srt', '.sub')
+	z = zipfile.ZipFile(fname, 'r')
+	z.printdir()
+	for fn in z.namelist():
+		if fn.endswith(sub_exts):
+			if '..' in fn or fn.startswith('/'):
+				error('Ignoring file with dangerous name: %s',
+						fn)
+				continue
+			echo('Extracting %s...', fn)
+			z.extract(fn)
+
+
+def get_subs(query_str, filters):
 	zip_exts = ('application/zip',)
 	rar_exts = ('application/rar', 'application/x-rar-compressed')
 
@@ -236,15 +249,7 @@ def get_subs(query_str, filters):
 		fname, headers = urlretrieve(sub['url'])
 		if 'Content-Type' in headers:
 			if headers['Content-Type'] in zip_exts:
-				z = zipfile.ZipFile(fname, 'r')
-				z.printdir()
-				for fn in z.namelist():
-					if fn.endswith(sub_exts):
-						if '..' in fn or fn.startswith('/'):
-							error('Dangerous file name: %s', fn)
-							continue
-						echo('Extracting %s...', fn)
-						z.extract(fn)
+				unzip_subs(fname)
 			elif headers['Content-Type'] in rar_exts:
 				if subprocess.call(['rar', 'x', fname]) != 0:
 					error('Error unraring file %s', fname)
