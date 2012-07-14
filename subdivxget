@@ -43,6 +43,7 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 		self.parsing = False
 		self.subs = []
 		self.attr = None
+		self.in_script_style = False
 
 	def handle_starttag(self, tag, attrs):
 		attrs = dict(attrs)
@@ -51,6 +52,9 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			self.subs.append(self.cur)
 			self.parsing = True
 		if not self.parsing:
+			return
+		if tag == 'script' or tag == 'style':
+			self.in_script_style = True
 			return
 		if tag == 'div':
 			if attrs.get('id') == 'buscador_detalle':
@@ -67,6 +71,9 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 
 	def handle_endtag(self, tag):
 		if self.parsing:
+			if tag == 'script' or tag == 'style':
+				self.in_script_style = False
+				return
 			self.depth -= 1
 		if self.depth == 0:
 			self.parsing = False
@@ -75,6 +82,10 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 		if not self.parsing:
 			return
 		data = data.strip()
+		# Hack to handle comments in <script> <style> which don't end
+		# up in handle_comment(), so we just ignore the whole tags
+		if self.in_script_style:
+			return
 		if self.attr is not None and data:
 			self.cur[self.attr] = data
 			self.attr = None
