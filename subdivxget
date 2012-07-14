@@ -233,6 +233,7 @@ def unzip_subs(fname):
 
 
 def get_subs(query_str, filters):
+	global opts
 	zip_exts = ('application/zip',)
 	rar_exts = ('application/rar', 'application/x-rar-compressed')
 
@@ -246,6 +247,8 @@ def get_subs(query_str, filters):
   %(desc)s
 	DOWNLOADING ...
 ''', **sub)
+		if opts.list_only:
+			continue
 		fname, headers = urlretrieve(sub['url'])
 		if 'Content-Type' in headers:
 			if headers['Content-Type'] in zip_exts:
@@ -260,5 +263,30 @@ def get_subs(query_str, filters):
 			error('No Content-Type!')
 
 
-get_subs(sys.argv[1], sys.argv[2:])
+def parse_args(argv):
+	from optparse import OptionParser
+	parser = OptionParser(usage="%prog [OPTIONS] QUERY [FILTER ...]",
+			description="""
+Download subtitles from subdivx.com searching the string QUERY. If FILTERs are
+specified, only subtitles that matches all those filters are downloaded.
+Filters have the format "X:fitler", where X is a field specification: t=titulo,
+d=desc, a=autor, f=formato, c=comentarios, C=cds, F=fecha and D=downloads.
+filter is a string that should be found on that field (case insensitive). If
+the format specifier is not known (or there isn't one) the filter string is
+looked in all the fields.
+			""".strip())
+	parser.add_option("-l", "--list-only",
+			default=False, action='store_true',
+			help="Don't download the subtitles, just list them")
+
+	(opts, args) = parser.parse_args()
+	if not args:
+              parser.error("Missing query string")
+
+	return (args[0], args[1:], opts)
+
+(query_str, filters, opts) = parse_args(sys.argv)
+
+get_subs(query_str, filters)
+
 
