@@ -43,6 +43,7 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 		self.parsing = False
 		self.subs = []
 		self.attr = None
+		self.cur = None
 		self.in_script_style = False
 
 	def handle_starttag(self, tag, attrs):
