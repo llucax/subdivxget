@@ -67,7 +67,8 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 				self.attr = 'titulo'
 			elif attrs.get('href', '').startswith(self.down_uri):
 				self.cur['url'] = attrs['href']
-		if self.parsing:
+		# br are usually not closed, so ignore them in depth calculation
+		if self.parsing and tag != 'br':
 			self.depth += 1
 
 	def handle_endtag(self, tag):
@@ -75,7 +76,9 @@ class SubDivXHTMLParser(HTMLParser.HTMLParser):
 			if tag == 'script' or tag == 'style':
 				self.in_script_style = False
 				return
-			self.depth -= 1
+			# see comment in handle_starttag()
+			if tag != 'br':
+				self.depth -= 1
 		if self.depth == 0:
 			self.parsing = False
 
