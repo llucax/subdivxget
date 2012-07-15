@@ -280,10 +280,10 @@ looked in all the fields.
 			""".strip())
 	parser.add_option("-l", "--list-only",
 			default=False, action='store_true',
-			help="Don't download the subtitles, just list them")
+			help="don't download the subtitles, just list them")
 	parser.add_option("-q", "--quiet",
 			default=False, action='store_true',
-			help="Don't print progress messages")
+			help="don't print progress messages")
 
 	(opts, args) = parser.parse_args()
 	if not args:
